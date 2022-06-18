@@ -1,0 +1,19 @@
+linters:
+  enable:
+    - deadcode
+    - errcheck
+    - gosimple
+    - goimports
+    - govet
+    - ineffassign
+    - staticcheck
+    - structcheck
+    - unused
+    - varcheck
+    - wsl
+    - godot
+    - revive
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
