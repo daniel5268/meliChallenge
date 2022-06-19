@@ -2,12 +2,12 @@ package meteorology
 
 import (
 	"math"
+
+	"github.com/daniel5268/meliChallenge/domain/geometry"
 )
 
 const (
-	completeSpin = float64(360)
-	halfSpin     = completeSpin / 2
-	allowedError = float64(0.01) // closeness allowed to the main line for a coordinate to be considered aligned
+	ALIGNMENT_THRESHOLD = float64(0.01) // closeness allowed to the main line for a coordinate to be considered aligned
 )
 
 type alignment int16
@@ -25,14 +25,18 @@ const (
 	ClimateNoInfo = "no_info"
 )
 
+var sunCoordinate geometry.Coordinate = geometry.NewCoordinate(0, 0)
+
+// Planet conatins the properties needed to calculate a planets position
 type Planet struct {
 	DegreesByDay   float64
 	InitialDegrees float64
 	DistanceToSun  uint64
 }
 
-func NewPlanet(degreesByDay float64, passedDays float64, initialDegrees float64, distanceToSun uint64) *Planet {
-	return &Planet{
+// NewPlanet returns a new Planet given it's properties
+func NewPlanet(degreesByDay float64, initialDegrees float64, distanceToSun uint64) Planet {
+	return Planet{
 		DegreesByDay:   degreesByDay,
 		InitialDegrees: initialDegrees,
 		DistanceToSun:  distanceToSun,
@@ -41,77 +45,29 @@ func NewPlanet(degreesByDay float64, passedDays float64, initialDegrees float64,
 
 // getPositionDegrees returns the degrees traveled by the planet starting from zero everytime a full spin is passed
 func (p Planet) getPositionDegrees(passedDays float64) float64 {
-	return math.Mod(p.InitialDegrees+p.DegreesByDay*passedDays, completeSpin)
-}
-
-func toRadians(degrees float64) float64 {
-	return degrees * math.Pi / halfSpin
+	traveledDegress := geometry.GetTraveledDistance(p.DegreesByDay, passedDays)
+	return math.Mod(p.InitialDegrees+traveledDegress, geometry.COMPLETE_SPIN_DEGREES)
 }
 
 // getPositionRadians returns the radians traveled by the planet starting from zero everytime a full spin is passed
 func (p Planet) getPositionRadians(passedDays float64) float64 {
-	return toRadians(p.getPositionDegrees(passedDays))
+	return geometry.ToRadians(p.getPositionDegrees(passedDays))
 }
 
-type coordinate struct {
-	x float64
-	y float64
-}
-
-var sunCoordinate = coordinate{
-	x: 0,
-	y: 0,
-}
-
-func (p Planet) getCoordinate(passedDays float64) coordinate {
+func (p Planet) getCoordinate(passedDays float64) geometry.Coordinate {
 	traveledRadians := p.getPositionRadians(passedDays)
 	x := math.Cos(traveledRadians) * float64(p.DistanceToSun)
 	y := math.Sin(traveledRadians) * float64(p.DistanceToSun)
 
-	return coordinate{
-		x: x,
-		y: y,
-	}
+	return geometry.NewCoordinate(x, y)
 }
 
-type rectEquation struct {
-	m          float64
-	b          float64
-	isVertical bool
-	xVertical  float64
+// rectEquationContains returns true if the provided rect equation is close enougth to the provided coordinate to be considered aligned
+func rectEquationContains(re geometry.RectEquation, c geometry.Coordinate) bool {
+	return re.DistanceToCoordinate(c) <= ALIGNMENT_THRESHOLD
 }
 
-// distanceToCoordinate returns the minimun distance fron a given coordinate to the rect described by the ecuation
-func (re rectEquation) distanceToCoordinate(c coordinate) float64 {
-	if re.isVertical {
-		return math.Abs(re.xVertical - c.x)
-	}
-
-	return math.Abs(re.m*c.x-c.y+re.b) / math.Sqrt(re.m*re.m+1)
-}
-
-// returns true if the line described by the ecuation close enougth to coordinate to be considered aligned
-func (re rectEquation) contains(c coordinate) bool {
-	return re.distanceToCoordinate(c) <= allowedError
-}
-
-func getRectEcuation(c1, c2 coordinate) rectEquation {
-	denominator := c1.x - c2.x
-	if denominator == 0 {
-		return rectEquation{
-			isVertical: true,
-			xVertical:  c1.x,
-		}
-	}
-	m := (c1.y - c2.y) / denominator
-	b := c1.y - m*c1.x
-
-	return rectEquation{
-		m: m,
-		b: b,
-	}
-}
-
+// getClosestPlanet returns the closest planet to the sun from a given Planet slice
 func getClosestPlanet(planets ...Planet) Planet {
 	closestPlanet := planets[0]
 
@@ -124,6 +80,7 @@ func getClosestPlanet(planets ...Planet) Planet {
 	return closestPlanet
 }
 
+// getFarthestPlanet returns the farthest planet to the sun from a given Planet slice
 func getFarthestPlanet(planets ...Planet) Planet {
 	farthestPlanet := planets[0]
 
@@ -143,27 +100,20 @@ func getAlignment(passedDays float64, planets ...Planet) alignment {
 	closestCoordinate := closestPlanet.getCoordinate(passedDays)
 	farthestCoordinate := farthestPlanet.getCoordinate(passedDays)
 
-	ecuation := getRectEcuation(closestCoordinate, farthestCoordinate)
+	equation := geometry.NewRectEquation(closestCoordinate, farthestCoordinate)
 
 	for _, p := range planets {
 		c := p.getCoordinate(passedDays)
-		if !ecuation.contains(c) {
+		if !rectEquationContains(equation, c) {
 			return alignmentNone
 		}
 	}
 
-	if ecuation.contains(sunCoordinate) {
+	if rectEquationContains(equation, sunCoordinate) {
 		return alignmentWithSun
 	}
 
 	return alignmentWithoutSun
-}
-
-func diff(c1, c2 coordinate) coordinate {
-	return coordinate{
-		x: c1.x - c2.x,
-		y: c1.y - c2.y,
-	}
 }
 
 // isSunBetween calculates if a point is inside a triangle
@@ -173,13 +123,7 @@ func isSunBetween(p1, p2, p3 Planet, passedDays float64) bool {
 	b := p2.getCoordinate(passedDays)
 	c := p3.getCoordinate(passedDays)
 
-	d := diff(b, a)
-	e := diff(c, a)
-
-	w1 := (e.x*a.y - e.y*a.x) / (d.x*e.y - d.y*e.x)
-	w2 := -(a.y + w1*d.y) / e.y
-
-	return w1 >= 0 && w2 >= 0 && w1+w2 <= 1
+	return geometry.IsOriginInTriangle(a, b, c)
 }
 
 func GetClimate(passedDays float64, planets [3]Planet) string {

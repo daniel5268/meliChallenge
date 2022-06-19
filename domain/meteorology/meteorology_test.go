@@ -9,21 +9,9 @@ import (
 
 func TestGetClimate(t *testing.T) {
 	planets := [3]meteorology.Planet{
-		{
-			InitialDegrees: 90,
-			DistanceToSun:  500,
-			DegreesByDay:   -1,
-		},
-		{
-			InitialDegrees: 90,
-			DistanceToSun:  2000,
-			DegreesByDay:   -3,
-		},
-		{
-			InitialDegrees: 90,
-			DistanceToSun:  1000,
-			DegreesByDay:   5,
-		},
+		meteorology.NewPlanet(-1, 90, 500),
+		meteorology.NewPlanet(-3, 90, 2000),
+		meteorology.NewPlanet(5, 90, 1000),
 	}
 
 	tests := []struct {
