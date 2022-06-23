@@ -3,7 +3,7 @@ package meteorology
 import (
 	"math"
 
-	"github.com/daniel5268/meliChallenge/domain/geometry"
+	"github.com/daniel5268/meliChallenge/src/domain/geometry"
 )
 
 const (

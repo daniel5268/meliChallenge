@@ -3,7 +3,7 @@ package geometry_test
 import (
 	"testing"
 
-	"github.com/daniel5268/meliChallenge/domain/geometry"
+	"github.com/daniel5268/meliChallenge/src/domain/geometry"
 	"github.com/stretchr/testify/assert"
 )
 
