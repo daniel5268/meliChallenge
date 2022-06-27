@@ -1,13 +1,26 @@
 package meteorology
 
 import (
+	"errors"
 	"math"
+	"os"
+	"strconv"
+	"time"
 
 	"github.com/daniel5268/meliChallenge/src/domain/geometry"
 )
 
+var ErrInvalidEnv = errors.New("invalid_environment")
+
 const (
-	ALIGNMENT_THRESHOLD = float64(0.01) // closeness allowed to the main line for a coordinate to be considered aligned
+	// alignmentThreshold represents the closeness allowed to the main line for a coordinate to be considered aligned
+	alignmentThreshold = float64(0.01)
+)
+
+const (
+	Ferengi   = "ferengi"
+	Betasoide = "betasoide"
+	Vulcano   = "vulcano"
 )
 
 type alignment int16
@@ -18,11 +31,13 @@ const (
 	alignmentNone
 )
 
+type Climate string
+
 const (
-	ClimateFollow = "follow"
-	ClimateRain   = "rain"
-	ClimateIdeal  = "ideal"
-	ClimateNoInfo = "no_info"
+	ClimateFollow Climate = "sequia"
+	ClimateRain   Climate = "lluvia"
+	ClimateIdeal  Climate = "condiciones_optimas"
+	ClimateNoInfo Climate = "sin_informacion"
 )
 
 var sunCoordinate geometry.Coordinate = geometry.NewCoordinate(0, 0)
@@ -41,6 +56,20 @@ func NewPlanet(degreesByDay float64, initialDegrees float64, distanceToSun uint6
 		InitialDegrees: initialDegrees,
 		DistanceToSun:  distanceToSun,
 	}
+}
+
+type ClimateRecord struct {
+	ID        uint64    `json:"-"`
+	Day       int64     `json:"dia"`
+	Climate   Climate   `json:"clima"`
+	CreatedAt time.Time `json:"-"`
+}
+
+type ClimateRecordJob struct {
+	ID        uint64
+	FirstDay  int64
+	LastDay   int64
+	CreatedAt time.Time
 }
 
 // getPositionDegrees returns the degrees traveled by the planet starting from zero everytime a full spin is passed
@@ -62,9 +91,17 @@ func (p Planet) getCoordinate(passedDays float64) geometry.Coordinate {
 	return geometry.NewCoordinate(x, y)
 }
 
+func GetPerimeter(passedDays float64, planets [3]Planet) float64 {
+	c0 := planets[0].getCoordinate(passedDays)
+	c1 := planets[1].getCoordinate(passedDays)
+	c2 := planets[2].getCoordinate(passedDays)
+
+	return geometry.GetTrianglePerimeter(c0, c1, c2)
+}
+
 // rectEquationContains returns true if the provided rect equation is close enougth to the provided coordinate to be considered aligned
 func rectEquationContains(re geometry.RectEquation, c geometry.Coordinate) bool {
-	return re.DistanceToCoordinate(c) <= ALIGNMENT_THRESHOLD
+	return re.DistanceToCoordinate(c) <= alignmentThreshold
 }
 
 // getClosestPlanet returns the closest planet to the sun from a given Planet slice
@@ -126,9 +163,10 @@ func isSunBetween(p1, p2, p3 Planet, passedDays float64) bool {
 	return geometry.IsOriginInTriangle(a, b, c)
 }
 
-func GetClimate(passedDays float64, planets [3]Planet) string {
+// GetClimate creturns the Climate given a moment (passed days) and an array of three planets
+func GetMomentClimate(moment float64, planets [3]Planet) Climate {
 	planetsSlice := planets[:]
-	alignment := getAlignment(passedDays, planetsSlice...)
+	alignment := getAlignment(moment, planetsSlice...)
 
 	if alignment == alignmentWithoutSun {
 		return ClimateIdeal
@@ -138,9 +176,65 @@ func GetClimate(passedDays float64, planets [3]Planet) string {
 		return ClimateFollow
 	}
 
-	if isSunBetween(planets[0], planets[1], planets[2], passedDays) {
+	if isSunBetween(planets[0], planets[1], planets[2], moment) {
 		return ClimateRain
 	}
 
 	return ClimateNoInfo
+}
+
+// GetCurrentDayClimate returns an special Climate (ClimateIdeal, ClimateRain, ClimateFollow)
+// if one of this is reached in the provided day, if not, it returns ClimateNoInfo
+func GetDayClimate(day int64, planets [3]Planet) (Climate, float64) {
+	limit := float64(day + 1)
+	momentDelta := float64(0.00002)
+	for moment := float64(day); moment < limit; moment += momentDelta {
+		currentClimate := GetMomentClimate(moment, planets)
+
+		if currentClimate != ClimateNoInfo {
+			return currentClimate, moment
+		}
+	}
+
+	return ClimateNoInfo, 0
+}
+
+func getEnvStr(key string) (string, error) {
+	v := os.Getenv(key)
+	if v == "" {
+		return v, ErrInvalidEnv
+	}
+	return v, nil
+}
+
+func getSafeEnvFloat64(key string) float64 {
+	s, err := getEnvStr(key)
+	if err != nil {
+		return 0
+	}
+	v, err := strconv.ParseFloat(s, 64)
+	if err != nil {
+		return 0
+	}
+	return v
+}
+
+func GetPlanets() [3]Planet {
+	ferengiDegreesByDay := getSafeEnvFloat64("FERENGI_DEGREES_BY_DAY")
+	betasoideDegreesByDay := getSafeEnvFloat64("BETASOIDE_DEGREES_BY_DAY")
+	vulcanoDegreesByDay := getSafeEnvFloat64("VULCANO_DEGREES_BY_DAY")
+
+	ferengiInitialDegrees := getSafeEnvFloat64("FERENGI_INITIAL_DEGREES")
+	betasoideInitialDegrees := getSafeEnvFloat64("BETASOIDE_INITIAL_DEGREES")
+	vulcanoInitialDegrees := getSafeEnvFloat64("VULCANO_INITIAL_DEGREES")
+
+	ferengiDistanceToSun := getSafeEnvFloat64("FERENGI_DISTANCE_TO_SUN")
+	betasoideDistanceToSun := getSafeEnvFloat64("BETASOIDE_DISTANCE_TO_SUN")
+	vulcanoDistanceToSun := getSafeEnvFloat64("VULCANO_DISTANCE_TO_SUN")
+
+	ferengi := NewPlanet(ferengiDegreesByDay, ferengiInitialDegrees, uint64(ferengiDistanceToSun))
+	betasoide := NewPlanet(betasoideDegreesByDay, betasoideInitialDegrees, uint64(betasoideDistanceToSun))
+	vulcano := NewPlanet(vulcanoDegreesByDay, vulcanoInitialDegrees, uint64(vulcanoDistanceToSun))
+
+	return [3]Planet{ferengi, betasoide, vulcano}
 }

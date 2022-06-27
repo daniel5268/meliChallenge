@@ -1,21 +1,20 @@
 version: "3.8"
 services:
-  postgres:
-    container_name: ${DB_HOST}
-    image: postgres
-    ports:
-        - "5432:5432"
-    environment:
-      POSTGRES_DB: ${DB_NAME}
-      POSTGRES_USER: ${DB_USER}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
-    restart: unless-stopped
-  ci:
+  start:
     build:
       context: .
       dockerfile: Dockerfile
+    network_mode: host
     env_file:
-      - .dev.env
-    depends_on:
-      - postgres
-    command: "bash ./ci.sh"
+      - .env
+    command: "bash ./main.sh"
+  test:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    network_mode: host
+    ports:
+      - 3000:3000
+    env_file:
+      - .test.env
+    command: "go test ./..."
