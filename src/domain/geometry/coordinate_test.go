@@ -20,7 +20,7 @@ func TestCoordinateDiff(t *testing.T) {
 }
 
 func TestCoordinateDistance(t *testing.T) {
-	t.Run("resturns the distance to the provided coordinate", func(t *testing.T) {
+	t.Run("returns the distance to the provided coordinate", func(t *testing.T) {
 		c := geometry.NewCoordinate(1, 2)
 		c2 := geometry.NewCoordinate(4, 6)
 		want := float64(5)

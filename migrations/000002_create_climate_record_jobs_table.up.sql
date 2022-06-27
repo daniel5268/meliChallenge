@@ -1,0 +1,7 @@
+CREATE TABLE climate_record_jobs
+(
+  id SERIAL PRIMARY KEY,
+  first_day INTEGER NOT NULL,
+  last_day INTEGER NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);

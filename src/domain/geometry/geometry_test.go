@@ -14,13 +14,13 @@ func almostEqual(a, b float64) bool {
 	return math.Abs(a-b) <= FLOAT_64_EQUALITY_THRESHOLD
 }
 func TestToRadians(t *testing.T) {
-	t.Run("should convert degrees to radians", func(t *testing.T) {
+	t.Run("converts degrees to radians", func(t *testing.T) {
 		assert.Equal(t, math.Pi, geometry.ToRadians(180))
 	})
 }
 
 func TestGetTraveledDistance(t *testing.T) {
-	t.Run("should return the traveled distance", func(t *testing.T) {
+	t.Run("returns the traveled distance", func(t *testing.T) {
 		assert.Equal(t, float64(60), geometry.GetTraveledDistance(5, 12))
 	})
 }
@@ -34,14 +34,14 @@ func TestIsOriginInTriangle(t *testing.T) {
 		want bool
 	}{
 		{
-			name: "should return true when the triangle contains the origin",
+			name: "returns true when the triangle contains the origin",
 			a:    geometry.NewCoordinate(-1, 1),
 			b:    geometry.NewCoordinate(1, 0),
 			c:    geometry.NewCoordinate(0, -1),
 			want: true,
 		},
 		{
-			name: "should return false when the triangle doesn't contain the origin",
+			name: "returns false when the triangle doesn't contain the origin",
 			a:    geometry.NewCoordinate(-1, 1),
 			b:    geometry.NewCoordinate(1, 1),
 			c:    geometry.NewCoordinate(0.5, 0.5),
@@ -56,7 +56,7 @@ func TestIsOriginInTriangle(t *testing.T) {
 }
 
 func TestGetTrianglePerimeter(t *testing.T) {
-	t.Run("should return the perimeter", func(t *testing.T) {
+	t.Run("returns∫ the perimeter", func(t *testing.T) {
 		want := float64(12)
 		got := geometry.GetTrianglePerimeter(
 			geometry.NewCoordinate(1, 1),
