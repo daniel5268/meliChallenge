@@ -1,2 +1,2 @@
-migrate -database postgres://$DB_USER:$DB_PASSWORD@$DB_HOST:$DB_PORT/$DB_NAME?sslmode=disable -path ./migrations up
+migrate -database $DATABASE_URL -path ./migrations up
 go run ./src/main.go
