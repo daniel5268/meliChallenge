@@ -7,8 +7,10 @@ Meli Challenge
  - Renombrar el archivo .env.example a .env
  - Crear una base de datos nueva en postgres
  - Configurar los valores de la base de datos en el archivo .env (variables que inician en DB_)
+   En macOS docker no puede acceder a hosts externos por lo que la base de datos debe estar en el contenedor y la variable de entorno DB_HOST debe tener el valor host.docker.internal (https://docs.docker.com/desktop/mac/networking/)
  - Configurar el puerto por el que se escucharán las peticiones http en el archivo .env (PORT)
- - Correr el comando make start
+ - Correr el comando `make start`
+ - Si se ejecuta el contenedor docker desde macOS se recomienda utilizar el comando anterior sólo para correr las migraciones, por ende finalizar el proceso (control + c) y correr el comando `go run ./src/main.go`
 
 ## Descripcion general del funcionamiento
 Al iniciarse la app se crea el primer climate_record_job, este se encarga de crear los climate_record iniciales (10 años)

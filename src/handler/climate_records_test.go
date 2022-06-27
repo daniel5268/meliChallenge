@@ -16,7 +16,7 @@ import (
 func buildJSONRequest(day string) *http.Request {
 	req := httptest.NewRequest(http.MethodGet, "/clima", nil)
 	q := req.URL.Query()
-	q.Add("day", day)
+	q.Add("dia", day)
 	req.URL.RawQuery = q.Encode()
 
 	return req
