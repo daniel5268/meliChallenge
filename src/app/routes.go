@@ -9,4 +9,5 @@ func (a *App) setupRoutes(g *echo.Group) {
 	climateRecordsAPIGroup := g.Group("/clima")
 
 	climateRecordsAPIGroup.GET("", crHandler.GetClimateRecord)
+	climateRecordsAPIGroup.GET("/resumen", crHandler.GetClimateRecordsSummary)
 }

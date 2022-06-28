@@ -61,8 +61,18 @@ func NewPlanet(degreesByDay float64, initialDegrees float64, distanceToSun uint6
 type ClimateRecord struct {
 	ID        uint64    `json:"-"`
 	Day       int64     `json:"dia"`
+	Perimeter float64   `json:"-"`
 	Climate   Climate   `json:"clima"`
 	CreatedAt time.Time `json:"-"`
+}
+
+type ClimateRecordSummary struct {
+	FirstDay   int64  `json:"primer_dia"`
+	LastDay    int64  `json:"ultimo_dia"`
+	MaxRainDay int64  `json:"dia_lluvia_maxima,omitempty"`
+	FollowDays uint64 `json:"dias_sequia"`
+	RainDays   uint64 `json:"dias_lluvia"`
+	IdealDays  uint64 `json:"dias_condiciones_optimas"`
 }
 
 type ClimateRecordJob struct {
@@ -197,6 +207,19 @@ func GetDayClimate(day int64, planets [3]Planet) (Climate, float64) {
 	}
 
 	return ClimateNoInfo, 0
+}
+
+func GetDayClimateRecord(day int64, planets [3]Planet) *ClimateRecord {
+	dayClimate, exactMoment := GetDayClimate(day, planets)
+	climateRecord := &ClimateRecord{
+		Day:     day,
+		Climate: dayClimate,
+	}
+	if dayClimate == ClimateRain { // it only calculates perimeter if climate is rain
+		climateRecord.Perimeter = GetPerimeter(exactMoment, planets)
+	}
+
+	return climateRecord
 }
 
 func getEnvStr(key string) (string, error) {

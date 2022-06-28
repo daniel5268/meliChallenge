@@ -45,3 +45,19 @@ func (r *ClimateRecordsRepository) FindByDay(day int64) (meteorology.ClimateReco
 
 	return cr, nil
 }
+
+func (r *ClimateRecordsRepository) FindBetweenDays(firstDay int64, lastDay int64) ([]meteorology.ClimateRecord, error) {
+	climateRecords := []meteorology.ClimateRecord{}
+	result := r.db.Where("day >= ? AND day <= ?", firstDay, lastDay).Find(&climateRecords)
+
+	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+		return climateRecords, domain.ErrNoClimateRecordFound
+	}
+
+	if result.Error != nil {
+		log.Print(result.Error)
+		return climateRecords, domain.ErrFindClimateRecord
+	}
+
+	return climateRecords, nil
+}

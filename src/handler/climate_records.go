@@ -10,11 +10,14 @@ import (
 )
 
 const (
-	dayQueryParam = "dia"
+	dayQueryParam      = "dia"
+	fisrtDayQueryParam = "primer_dia"
+	lastDayQueryParam  = "ultimo_dia"
 )
 
 type ClimateRecordsService interface {
-	GetClimateRecord(day int64) (meteorology.ClimateRecord, error)
+	GetClimateRecord(int64) (meteorology.ClimateRecord, error)
+	GetClimateRecordsSummary(int64, int64) (meteorology.ClimateRecordSummary, error)
 }
 
 type ClimateRecordsHandler struct {
@@ -57,4 +60,23 @@ func (crh *ClimateRecordsHandler) GetClimateRecord(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, cr)
+}
+
+func (crh *ClimateRecordsHandler) GetClimateRecordsSummary(c echo.Context) error {
+	firstDay, err := int64QueryParam(c, fisrtDayQueryParam)
+	if err != nil {
+		return err
+	}
+
+	lastDay, err := int64QueryParam(c, lastDayQueryParam)
+	if err != nil {
+		return err
+	}
+
+	crs, err := crh.climateRecordsService.GetClimateRecordsSummary(firstDay, lastDay)
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(http.StatusOK, crs)
 }

@@ -36,7 +36,7 @@ func mapToAPIError(err error) APIError {
 	case domain.ErrInvalidDayParam:
 		return NewAPIError(err, "El dia es invalido", http.StatusBadRequest)
 	case domain.ErrNoClimateRecordFound:
-		return NewAPIError(err, "No se encontraron registros para este dia", http.StatusNotFound)
+		return NewAPIError(err, "No se encontraron registros", http.StatusNotFound)
 	case domain.ErrFindClimateRecord:
 		return NewAPIError(err, "Hubo un error encontrando este registro, por favor contacte el administrador", http.StatusInternalServerError)
 	default:

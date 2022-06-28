@@ -22,16 +22,18 @@ func TestClimateRecordJobsServiceCreateClimateRecordJob(t *testing.T) {
 	}
 	wantClimateRecords := []*meteorology.ClimateRecord{
 		{
-			Day:     89,
-			Climate: meteorology.ClimateRain,
+			Day:       89,
+			Climate:   meteorology.ClimateRain,
+			Perimeter: 5017.207212314261,
 		},
 		{
 			Day:     90,
 			Climate: meteorology.ClimateFollow,
 		},
 		{
-			Day:     91,
-			Climate: meteorology.ClimateRain,
+			Day:       91,
+			Climate:   meteorology.ClimateRain,
+			Perimeter: 5017.20721231426,
 		},
 	}
 

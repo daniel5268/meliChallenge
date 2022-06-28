@@ -33,6 +33,27 @@ func (_m *ClimateRecordsService) GetClimateRecord(day int64) (meteorology.Climat
 	return r0, r1
 }
 
+// GetClimateRecordsSummary provides a mock function with given fields: fisrtDay, lastDat
+func (_m *ClimateRecordsService) GetClimateRecordsSummary(fisrtDay int64, lastDat int64) (meteorology.ClimateRecordSummary, error) {
+	ret := _m.Called(fisrtDay, lastDat)
+
+	var r0 meteorology.ClimateRecordSummary
+	if rf, ok := ret.Get(0).(func(int64, int64) meteorology.ClimateRecordSummary); ok {
+		r0 = rf(fisrtDay, lastDat)
+	} else {
+		r0 = ret.Get(0).(meteorology.ClimateRecordSummary)
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(int64, int64) error); ok {
+		r1 = rf(fisrtDay, lastDat)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 type mockConstructorTestingTNewClimateRecordsService interface {
 	mock.TestingT
 	Cleanup(func())

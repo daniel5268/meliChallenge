@@ -20,8 +20,9 @@ func TestClimateRecordsRepositoryCreate(t *testing.T) {
 		{
 			name: "creates a ClimateRecord",
 			cr: &meteorology.ClimateRecord{
-				Day:     2,
-				Climate: meteorology.ClimateIdeal,
+				Day:       2,
+				Climate:   meteorology.ClimateIdeal,
+				Perimeter: 6.4,
 			},
 		},
 	}

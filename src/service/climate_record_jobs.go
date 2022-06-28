@@ -2,8 +2,6 @@ package service
 
 import (
 	"errors"
-	"fmt"
-	"os"
 	"sync"
 	"time"
 
@@ -17,7 +15,7 @@ type ClimateRecordJobsService struct {
 }
 
 type ClimateRecordJobsRepository interface {
-	Create(cr ...*meteorology.ClimateRecordJob) error
+	Create(...*meteorology.ClimateRecordJob) error
 	FindLast() (meteorology.ClimateRecordJob, error)
 }
 
@@ -28,51 +26,14 @@ func NewClimateRecordJobsService(crR ClimateRecordsRepository, crjR ClimateRecor
 	}
 }
 
-func saveResponses(climateRecords []*meteorology.ClimateRecord, perimeters []float64) {
-	followCount := 0
-	idealCount := 0
-	rainCount := 0
-
-	for _, cr := range climateRecords {
-		switch cr.Climate {
-		case meteorology.ClimateFollow:
-			followCount += 1
-		case meteorology.ClimateIdeal:
-			idealCount += 1
-		case meteorology.ClimateRain:
-			rainCount += 1
-		}
-	}
-
-	var maxPerimeter float64
-	var maxPerimeterIndex int
-
-	for i, p := range perimeters {
-		if p > maxPerimeter {
-			maxPerimeter = p
-			maxPerimeterIndex = i
-		}
-	}
-	resultsFile := "./results"
-	f, err := os.Create(resultsFile)
-	if err != nil {
-		panic("error creating results file")
-	}
-	defer f.Close()
-	results := fmt.Sprintf("lluvia:%d maxima:%d\nsequia:%d\noptimo:%d", rainCount, maxPerimeterIndex, followCount, idealCount)
-	f.WriteString(results)
-}
-
-// CreateClimateRecords calculates and creates a list of climateRecords given an array of three planets
-// if no climate records are found it creates 10 years of climateRecords
-// if climate records are found it stores the next climateRecord
+// CreateClimateRecordJob creates a new climate_record_job and the climate_records associated to the job
+// if no climate_record_jobs are found it creates 10 years of climate_records
+// if climate_record_jobs are found it creates a number of climate_records = the days that passed since the last created job
 func (crs *ClimateRecordJobsService) CreateClimateRecordJob() error {
-
-	var firstDay int64 = 0 // if no jobs have been executed, those will be limits to calculate climateRecords
-	var lastDay int64 = 3650
+	var firstDay int64 = 0   // if no jobs have been executed, those will be limits to calculate climateRecords
+	var lastDay int64 = 3650 // ten years
 
 	lastClimateRecordJob, err := crs.climateRecordJobsRepository.FindLast()
-
 	isFirstExecution := errors.Is(err, domain.ErrNoClimateRecordJobFound)
 
 	if err != nil && !isFirstExecution {
@@ -90,31 +51,19 @@ func (crs *ClimateRecordJobsService) CreateClimateRecordJob() error {
 		return nil
 	}
 
-	newClimateRecordsLength := lastDay - firstDay
-	climateRecords := make([]*meteorology.ClimateRecord, newClimateRecordsLength)
-	perimeters := make([]float64, newClimateRecordsLength)
-
+	climateRecordsLength := lastDay - firstDay
+	climateRecords := make([]*meteorology.ClimateRecord, climateRecordsLength)
 	planets := meteorology.GetPlanets()
+
 	var wg sync.WaitGroup
 	for currentDay := firstDay; currentDay < lastDay; currentDay++ {
 		wg.Add(1)
 		go func(currentDay int64) {
 			defer wg.Done()
-			dayClimate, exactMoment := meteorology.GetDayClimate(currentDay, planets)
-			climateRecords[currentDay-firstDay] = &meteorology.ClimateRecord{
-				Day:     currentDay,
-				Climate: dayClimate,
-			}
-			if isFirstExecution && dayClimate == meteorology.ClimateRain { // it only calculates perimeter if it's the first execution
-				perimeters[currentDay-firstDay] = meteorology.GetPerimeter(exactMoment, planets)
-			}
+			climateRecords[currentDay-firstDay] = meteorology.GetDayClimateRecord(currentDay, planets)
 		}(currentDay)
 	}
 	wg.Wait()
-
-	if isFirstExecution {
-		saveResponses(climateRecords, perimeters)
-	}
 
 	if err = crs.climateRecordsRepository.Create(climateRecords...); err != nil {
 		return err
